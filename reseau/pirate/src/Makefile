@@ -5,7 +5,6 @@ RM = rm -rf
 
 SRC = main.c \
 	utils.c \
-	print.c \
 
 OBJ = $(SRC:.c=.o)
 
