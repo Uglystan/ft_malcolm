@@ -1,34 +1,23 @@
-NAME = ft_malcolm
-CC = cc
-CFLAGS = -Werror -Wall -Wextra
-RM = rm -rf
+CC=gcc
+CFLAGS=-Werror -Wextra -Wall
 
-SRC = main.c \
-	utils.c \
+NAME=ft_malcolm
 
-OBJ = $(SRC:.c=.o)
+SRC= main.c \
 
-all : $(NAME)
+OBJ=$(SRC:.c=.o)
+
+all: $(NAME)
 
 $(NAME): $(OBJ)
-	$(CC) $(CFLAGS) $(OBJ) -o $(NAME)
+	$(CC) $(CFLAGS) -o $@ $^
 
 clean:
-	$(RM) $(OBJ)
+	rm -f $(OBJ)
 
 fclean: clean
-	$(RM) $(NAME)
+	rm -f $(NAME)
 
 re: fclean all
 
-start:
-	docker compose up -d --build
-
-stop:
-	docker compose down
-
-clean-D:
-	docker rmi $$(docker images -a -q)
-	docker system prune -f
-
-PHONY: all clean fclean re start stop clean-D
+.PHONY: all clean fclean re
