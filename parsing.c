@@ -15,18 +15,45 @@ static bool parse_mac(char *str_mac)
     }
     return (true);
 }
-static bool parse_ip(char *str_ip)
+
+static bool parse_ip(char *str_ip, uint8_t *ip_address)
 {
-    char ip[16];
-    int ret = inet_pton(AF_INET, str_ip, ip);
+    int ret = inet_pton(AF_INET, str_ip, ip_address);
     if(ret != 1)
         return (printf("Invalid IP address (%s)\n", str_ip), false);
     return (true);
 }
 
-bool parse_arg(char **argv)
+bool check_verbose_arg(char **argv, int argc)
 {
-    if (!parse_ip(argv[1]) || !parse_ip(argv[3]) || !parse_mac(argv[2]) || !parse_mac(argv[4]))
-        return (false);
+    for(int i = 0; i < argc; i++)
+    {
+        if (i == argc - 1 && argv[i][0] == '-' && argv[i][1] == 'v')
+            return (true);
+    }
+    return (false);
+}
+
+bool parse_arg(char **argv, int argc, struct data_arg *arg_addr)
+{
+    memset(arg_addr, 0, sizeof(struct data_arg));
+    if (argc == 5 || argc == 6)
+    {
+        if (!parse_ip(argv[1], arg_addr->arg_ip_addr_src) || !parse_ip(argv[3], arg_addr->arg_ip_addr_target) || !parse_mac(argv[2]) || !parse_mac(argv[4]))
+            return (false);
+        addr_char_to_int(argv[2], arg_addr->arg_mac_addr_src, 16);
+        addr_char_to_int(argv[4], arg_addr->arg_mac_addr_target, 16);
+        arg_addr->unicast = 1;
+        arg_addr->verbose = check_verbose_arg(argv, argc);
+    }
+    else if (strcmp(argv[1], "-g") == 0 && argc == 3)
+    {
+        if (!parse_ip(argv[2], arg_addr->arg_ip_addr_src))
+            return (false);
+        arg_addr->gratuitous = 1;
+        arg_addr->verbose = check_verbose_arg(argv, argc);
+    }
+    else
+        return(printf("Utilisation de ft_malcolm:\nMode unicast \"./ft_malcolm 'adresse ip source' 'adresse mac source' 'adresse ip cible' 'adresse mac cible'\"\nMode gratuitous \"./ft_malcolm -g 'sa propre adresse ip de l'interface'\"\nPour le mode verbose ajouter -v en dernier argument\n"), false);
     return (true);
 }

@@ -35,22 +35,33 @@ struct arp_frame {
     uint8_t target_ip[4];
 };
 
+struct data_arg {
+    uint8_t arg_mac_addr_src[ETH_ALEN];
+    uint8_t arg_ip_addr_src[4];
+    uint8_t arg_mac_addr_target[ETH_ALEN];
+    uint8_t arg_ip_addr_target[4];
+    int verbose;
+    int gratuitous;
+    int unicast;
+};
+
 struct network_frame {
     struct sockaddr_ll network_interface;
     struct arp_frame recv_frame;
     struct arp_frame send_frame;
+    struct data_arg arg_addr;
 };
 
 size_t ft_strlen(const char *str);
 void ft_strcpy(char *dest, const char *src);
 void converToBinary(char *data, size_t length);
 void binaryToHex(char *binStr);
-void print_network_interface(struct sockaddr_ll *network_interface);
-void print_arp_frame(const struct arp_frame *arp_frame);
-void print_trame(char *buf, size_t size);
-bool parse_arg(char **argv);
+void print_information(char *buf, struct network_frame *network_frame_info, size_t recv);
+bool parse_arg(char **argv, int argc, struct data_arg *arg_addr);
 bool create_frame_unicast_request(struct arp_frame *send_frame, struct arp_frame *recv_frame);
+bool create_frame_gatuitous(struct arp_frame *send_frame, char *ip);
 int pos_ascii_hex_int_to_int(char *str, size_t base_size);
-uint8_t *fill_address_test(char *address, uint8_t *mac_address, size_t base);
-
+void addr_char_to_int(char *address, uint8_t *mac_address, size_t base);
+int recv_frame(int sockRaw, char *buf, struct network_frame *network_frame_info, socklen_t *len);
+int send_frame(int sockRaw, struct network_frame *network_frame_info);
 #endif

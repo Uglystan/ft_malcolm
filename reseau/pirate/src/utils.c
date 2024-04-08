@@ -75,3 +75,26 @@ int pos_ascii_hex_int_to_int(char *str, size_t base_size)
     }
     return (ret);
 }
+
+void addr_char_to_int(char *address, uint8_t *mac_address, size_t base)
+{
+    char octects[3];
+    int j = 0, k = 0;
+    for(int i = 0; address[i] != '\0'; i++)
+    {
+        if(address[i] != ':')
+        {
+            octects[j] = address[i];
+            j++;
+        }
+        if (address[i] == ':')
+        {
+            octects[j] = '\0';
+            mac_address[k] = pos_ascii_hex_int_to_int(octects, base);
+            k++;
+            j = 0;
+        }
+    }
+    octects[j] = '\0';
+    mac_address[k] = pos_ascii_hex_int_to_int(octects, base);
+}

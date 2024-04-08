@@ -87,3 +87,14 @@ void print_trame(char *buf, size_t size)
     }
     printf("\n");
 }
+
+void print_information(char *buf, struct network_frame *network_frame_info, size_t recv)
+{
+    printf("-----------------------------------------------\033[1;32mNew ARP Trame recv\033[0m-----------------------------------------------\n");
+    printf("\n");
+    print_network_interface(&network_frame_info->network_interface);
+    print_arp_frame(&network_frame_info->recv_frame);
+    print_trame(buf, recv);
+    printf("----------------------------------------------------------------------------------------------------------------\n");
+    fflush(stdout);
+}

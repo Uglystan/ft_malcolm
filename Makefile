@@ -8,6 +8,7 @@ SRC = main.c \
 	printing.c \
 	parsing.c \
 	create_frame.c \
+	process_frame.c \
 
 OBJ = $(SRC:.c=.o)
 
