@@ -19,6 +19,10 @@
 #include <netinet/ip.h>
 #include <netinet/ether.h>
 #include <netinet/if_ether.h>
+#include <signal.h>
+#include <net/if.h>
+
+extern int sockRaw;
 
 struct arp_frame {
     uint8_t ether_dest_mac[ETH_ALEN];
@@ -54,14 +58,15 @@ struct network_frame {
 
 size_t ft_strlen(const char *str);
 void ft_strcpy(char *dest, const char *src);
-void converToBinary(char *data, size_t length);
+void converToBinary(char *data, ssize_t length);
 void binaryToHex(char *binStr);
-void print_information(char *buf, struct network_frame *network_frame_info, size_t recv);
-bool parse_arg(char **argv, int argc, struct data_arg *arg_addr);
+void print_information(char *buf, struct network_frame *network_frame_info, ssize_t recv);
+void print_network_interface(struct sockaddr_ll *network_interface);
+bool parse_arg(char **argv, int argc, struct data_arg *arg_addr, struct sockaddr_ll *network_interface);
 bool create_frame_unicast_request(struct arp_frame *send_frame, struct arp_frame *recv_frame);
 bool create_frame_gatuitous(struct arp_frame *send_frame, char *ip);
 int pos_ascii_hex_int_to_int(char *str, size_t base_size);
 void addr_char_to_int(char *address, uint8_t *mac_address, size_t base);
-int recv_frame(int sockRaw, char *buf, struct network_frame *network_frame_info, socklen_t *len);
+int recv_frame(int *sockRaw, char *buf, struct network_frame *network_frame_info, socklen_t *len);
 int send_frame(int sockRaw, struct network_frame *network_frame_info);
 #endif

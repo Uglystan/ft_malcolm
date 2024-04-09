@@ -1,14 +1,19 @@
 #include "main.h"
 
-int recv_frame(int sockRaw, char *buf, struct network_frame *network_frame_info, socklen_t *len)
+int recv_frame(int *sockRaw, char *buf, struct network_frame *network_frame_info, socklen_t *len)//On passe l'adresse pour que le changement soit detecter avec la fonction qui gere le signal
 {
     /* La structure sockaddr_ll fournit des informations sur l'interface réseau à laquelle une trame a été reçue ou à travers laquelle
     elle sera envoyée. Ces informations sont généralement liées à l'interface réseau locale sur la machine où le programme s'exécute
     (ou on recoit le message). La fonction recvfrom prend un type de sockaddr et la taille de se type et le remplie avec les informations*/
         
-    size_t recv = recvfrom(sockRaw, buf, SIZE_MAX_ARP, 0, (struct sockaddr *)&network_frame_info->network_interface, len);
+    ssize_t recv = recvfrom(*sockRaw, buf, SIZE_MAX_ARP, 0, (struct sockaddr *)&network_frame_info->network_interface, len);
     if (recv <= 0)
-        return (printf("recvfrom failed : %s\n", strerror(errno)), false);
+    {
+        if (*sockRaw == -1)//CTRL + C
+            return (false);
+        else
+            return (printf("recvfrom failed : %s\n", strerror(errno)), false);
+    }
     
     /* Ici, nous avons un pointeur 'buf' pointant vers les données brutes de la trame. On utilise memcpy pour copier tout ce qu'il y'a dans buf dans
     recv_frame et on fai tune copie de la taille de recv_frame*/

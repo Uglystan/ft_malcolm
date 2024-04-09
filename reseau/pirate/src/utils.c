@@ -23,10 +23,10 @@ void ft_strcpy(char *dest, const char *src)
 // Je met le bit en position la plus faible et je le compare avec 1 donc je l'extrait et ensuite je le met dans une string d'ou le +48
 // Dans cette fonction je vais extraire bit par bit ce que j'ai recu dans recvfrom donc je decale le chaque bit de chaque octect pour le mettre en position la plus faible
 // Et ensuite avec le AND 1 je l'extrait et comme je le met dans une chaine de caractere je fais +48
-void converToBinary(char *data, size_t length)
+void converToBinary(char *data, ssize_t length)
 {
     char binTrame[SIZE_MAX_ARP];
-    size_t i = 0, k = 0;
+    ssize_t i = 0, k = 0;
     for (; i < length; ++i) {
         for (int j = 7; j >= 0; --j) {
             binTrame[k++] = ((data[i] >> j) & 1) + 48;

@@ -74,7 +74,7 @@ void print_network_interface(struct sockaddr_ll *network_interface)
     printf("\n\n");
 }
 
-void print_trame(char *buf, size_t size)
+void print_trame(char *buf, ssize_t size)
 {
     printf("\033[1;31mTrame\033[0m\n");
     converToBinary(buf, size);
@@ -88,7 +88,7 @@ void print_trame(char *buf, size_t size)
     printf("\n");
 }
 
-void print_information(char *buf, struct network_frame *network_frame_info, size_t recv)
+void print_information(char *buf, struct network_frame *network_frame_info, ssize_t recv)
 {
     printf("-----------------------------------------------\033[1;32mNew ARP Trame recv\033[0m-----------------------------------------------\n");
     printf("\n");

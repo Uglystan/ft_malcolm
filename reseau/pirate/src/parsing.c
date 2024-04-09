@@ -24,7 +24,7 @@ static bool parse_ip(char *str_ip, uint8_t *ip_address)
     return (true);
 }
 
-bool check_verbose_arg(char **argv, int argc)
+static bool check_verbose_arg(char **argv, int argc)
 {
     for(int i = 0; i < argc; i++)
     {
@@ -34,9 +34,37 @@ bool check_verbose_arg(char **argv, int argc)
     return (false);
 }
 
-bool parse_arg(char **argv, int argc, struct data_arg *arg_addr)
+static bool check_interface(char *interface, struct sockaddr_ll *network_interface)
+{
+    struct ifaddrs *all_interfaces;
+
+    if ((getifaddrs(&all_interfaces)) != 0)
+        return (printf("Fail getifaddrs\n"), false);
+    while(all_interfaces != NULL)
+    {
+        if (strcmp(all_interfaces->ifa_name, interface) == 0)
+        {
+            network_interface->sll_family = AF_PACKET;
+            network_interface->sll_ifindex = if_nametoindex(all_interfaces->ifa_name);
+            network_interface->sll_halen = ETH_ALEN;
+            network_interface->sll_hatype = ARPHRD_ETHER;
+            network_interface->sll_protocol = htons(ETH_P_ARP);
+            memset(&network_interface->sll_addr, 0xFF, ETH_ALEN);
+            printf("\033[1;32mInterface %s find\033[0m\n", all_interfaces->ifa_name);
+            fflush(stdout);
+            break;
+        }
+        all_interfaces = all_interfaces->ifa_next;
+    }
+    if (all_interfaces == NULL)
+        return (printf("Error: Interface %s not found\n", interface), false);
+    return (true);
+}
+
+bool parse_arg(char **argv, int argc, struct data_arg *arg_addr, struct sockaddr_ll *network_interface)
 {
     memset(arg_addr, 0, sizeof(struct data_arg));
+    memset(network_interface, 0, sizeof(struct sockaddr_ll));
     if (argc == 5 || argc == 6)
     {
         if (!parse_ip(argv[1], arg_addr->arg_ip_addr_src) || !parse_ip(argv[3], arg_addr->arg_ip_addr_target) || !parse_mac(argv[2]) || !parse_mac(argv[4]))
@@ -46,14 +74,14 @@ bool parse_arg(char **argv, int argc, struct data_arg *arg_addr)
         arg_addr->unicast = 1;
         arg_addr->verbose = check_verbose_arg(argv, argc);
     }
-    else if (strcmp(argv[1], "-g") == 0 && argc == 3)
+    else if (strcmp(argv[1], "-g") == 0 && argc == 4)
     {
-        if (!parse_ip(argv[2], arg_addr->arg_ip_addr_src))
+        if (!parse_ip(argv[2], arg_addr->arg_ip_addr_target) || !check_interface(argv[3], network_interface))
             return (false);
         arg_addr->gratuitous = 1;
         arg_addr->verbose = check_verbose_arg(argv, argc);
     }
     else
-        return(printf("Utilisation de ft_malcolm:\nMode unicast \"./ft_malcolm 'adresse ip source' 'adresse mac source' 'adresse ip cible' 'adresse mac cible'\"\nMode gratuitous \"./ft_malcolm -g 'sa propre adresse ip de l'interface'\"\nPour le mode verbose ajouter -v en dernier argument\n"), false);
+        return(printf("Utilisation de ft_malcolm:\nMode unicast \"./ft_malcolm 'adresse ip source' 'adresse mac source' 'adresse ip cible' 'adresse mac cible'\"\nMode gratuitous \"./ft_malcolm -g 'Addresse Ip a usurper'\"\nPour le mode verbose ajouter -v en dernier argument\n"), false);
     return (true);
 }

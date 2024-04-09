@@ -80,9 +80,9 @@ bool create_frame_gatuitous(struct arp_frame *send_frame, char *ip)
     send_frame->mac_size = 0x06;
     send_frame->op_code = htons(0x0001);
     send_frame->protocole_type = htons(0x0800);
-    inet_pton(AF_INET, ip,send_frame->sender_ip);
+    inet_pton(AF_INET, ip, send_frame->sender_ip);
     get_my_address_MAC(send_frame->sender_mac);
-    inet_pton(AF_INET, ip,send_frame->target_ip);
+    inet_pton(AF_INET, ip, send_frame->target_ip);
     fill_adress(mac_broadcast, send_frame->target_mac, 6);
     return (true);
 }

