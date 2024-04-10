@@ -65,24 +65,27 @@ int main(int argc, char **argv)
             {
                 /*Creation de la trame arp retour falsifie*/
 
-                create_frame_unicast_request(&network_frame_info.send_frame, &network_frame_info.recv_frame);//COntrole code
-                if (send_frame(sockRaw, &network_frame_info) == -1)
-                    printf("Send fail %s\n", strerror(errno));
-                memset(&network_frame_info.network_interface, 0, sizeof(struct sockaddr_ll));
+                if (!(create_frame_unicast_request(&network_frame_info.send_frame, &network_frame_info.recv_frame)))
+                    return(1);
+                if (!(send_frame(sockRaw, &network_frame_info)))
+                    return (1);
                 print_information(buf, &network_frame_info, recv);
+                fflush(stdout);
+                memset(&network_frame_info.network_interface, 0, sizeof(struct sockaddr_ll));
+                memset(buf, 0, SIZE_MAX_ARP);
+                memset(&network_frame_info.recv_frame, 0, sizeof(struct arp_frame));
             }
         }
         else if (network_frame_info.arg_addr.gratuitous == 1) //Ne fonctionne pas si pas l'adresse ip n'est pas deja rentre sur les machines, marche en one shot
         {
-            create_frame_gatuitous(&network_frame_info.send_frame, argv[2]); //controle code
-            print_network_interface(&network_frame_info.network_interface);
+            if (!(create_frame_gatuitous(&network_frame_info.send_frame, argv[2])))
+                return (1);
             if (send_frame(sockRaw, &network_frame_info) == -1)
-                printf("Send fail %s\n", strerror(errno));
-            printf("Send\n");
+                return (1);
+            print_network_interface(&network_frame_info.network_interface);
+            print_arp_frame(&network_frame_info.send_frame);
             fflush(stdout);
         }
-        memset(buf, 0, SIZE_MAX_ARP);
-        memset(&network_frame_info.recv_frame, 0, sizeof(struct arp_frame));
         memset(&network_frame_info.send_frame, 0, sizeof(struct arp_frame));
     }
     return(0);
