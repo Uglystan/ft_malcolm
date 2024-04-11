@@ -12,9 +12,10 @@ En utilisant ntohs(), nous nous assurons que nous obtenons la valeur correcte du
 ce qui garantit une interprétation correcte du type de protocole encapsulé dans la trame Ethernet. Je decide de laisser en little-endian
 pour ne pas a avoir a convertir au moment de renvoyer le message*/
 
-void print_arp_frame(const struct arp_frame *arp_frame)
+void print_arp_frame(const struct arp_frame *arp_frame, char *msg)
 {
-    printf("\033[1;31mHeader Ethernet\033[0m\n");
+    printf("\033[1;31m%s\033[0m\n", msg);
+    printf("\033[1;34mHeader Ethernet\033[0m\n");
     printf("MAC address destination: ");
     for(int i = 0; i < ETH_ALEN; i++)
         printf("%02x ", arp_frame->ether_dest_mac[i]);
@@ -24,7 +25,7 @@ void print_arp_frame(const struct arp_frame *arp_frame)
         printf("%02x ", arp_frame->ether_src_mac[i]);
     printf("\nProtcol_type (hex): 0x%04x\n\n", ntohs(arp_frame->ether_type));
     int i = 0;
-    printf("\033[1;31mARP Content\033[0m\n");
+    printf("\033[1;34mARP Content\033[0m\n");
     printf("Hardware_type: 0x%04x\n", ntohs(arp_frame->hardware_type));
     printf("Protocol_type: 0x%04x\n", ntohs(arp_frame->protocole_type));
     printf("Mac_address_size (octect): 0x%02x\n", arp_frame->mac_size);
@@ -76,7 +77,7 @@ void print_network_interface(struct sockaddr_ll *network_interface)
 
 void print_trame(char *buf, ssize_t size)
 {
-    printf("\033[1;31mTrame\033[0m\n");
+    printf("\033[1;34mTrame\033[0m\n");
     converToBinary(buf, size);
     binaryToHex(buf);
     for(size_t i = 1; i <= ft_strlen(buf); i++)
@@ -85,7 +86,7 @@ void print_trame(char *buf, ssize_t size)
         if(i % 2 == 0)
             printf(" ");
     }
-    printf("\n");
+    printf("\n\033[1;31mEnd\033[0m\n");
 }
 
 void print_information(char *buf, struct network_frame *network_frame_info, ssize_t recv)
@@ -93,8 +94,8 @@ void print_information(char *buf, struct network_frame *network_frame_info, ssiz
     printf("-----------------------------------------------\033[1;32mNew ARP Trame recv\033[0m-----------------------------------------------\n");
     printf("\n");
     print_network_interface(&network_frame_info->network_interface);
-    print_arp_frame(&network_frame_info->recv_frame);
+    print_arp_frame(&network_frame_info->recv_frame, "Recv Trame");
     print_trame(buf, recv);
+    print_arp_frame(&network_frame_info->send_frame, "Send Trame");
     printf("----------------------------------------------------------------------------------------------------------------\n");
-    fflush(stdout);
 }

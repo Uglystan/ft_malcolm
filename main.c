@@ -49,7 +49,7 @@ int main(int argc, char **argv)
     // car il n y'a que celle ci qui nous interesse. Mais typiquement les logiciels de sniffing tel que wireshark utilise ETH_P_ALL. Le kernel a chaque fois
     //qu'il recoit une trame et qu'elle doit aussi aller a notre socket cree un copie de cette trame et l'envoie a la socket.
     //REF (https://stackoverflow.com/questions/62866943/how-does-the-af-packet-socket-work-in-linux et man 7 packet et linux/if_ether.h)
-
+    
     sockRaw = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ARP));
     if (sockRaw < 0)
         return(printf("socket failed : %s\n", strerror(errno)), 1);
@@ -65,30 +65,34 @@ int main(int argc, char **argv)
             {
                 /*Creation de la trame arp retour falsifie*/
 
-                if (!(create_frame_unicast_request(&network_frame_info.send_frame, &network_frame_info.recv_frame)))
+                if (!(create_frame_unicast_request(&network_frame_info.send_frame, &network_frame_info.recv_frame, argv[3], network_frame_info.arg_addr.verbose)))
                     return(1);
                 if (!(send_frame(sockRaw, &network_frame_info)))
                     return (1);
-                print_information(buf, &network_frame_info, recv);
+                if (network_frame_info.arg_addr.verbose == 1)
+                    print_information(buf, &network_frame_info, recv);
                 fflush(stdout);
                 memset(&network_frame_info.network_interface, 0, sizeof(struct sockaddr_ll));
                 memset(buf, 0, SIZE_MAX_ARP);
                 memset(&network_frame_info.recv_frame, 0, sizeof(struct arp_frame));
+                break;
             }
         }
         else if (network_frame_info.arg_addr.gratuitous == 1) //Ne fonctionne pas si pas l'adresse ip n'est pas deja rentre sur les machines, marche en one shot
         {
-            if (!(create_frame_gatuitous(&network_frame_info.send_frame, argv[2])))
+            if (!(create_frame_gatuitous(&network_frame_info.send_frame, argv[2], network_frame_info.arg_addr.verbose)))
                 return (1);
             if (send_frame(sockRaw, &network_frame_info) == -1)
                 return (1);
-            print_network_interface(&network_frame_info.network_interface);
-            print_arp_frame(&network_frame_info.send_frame);
+            if (network_frame_info.arg_addr.verbose == 1)
+                print_network_interface(&network_frame_info.network_interface);
+                print_arp_frame(&network_frame_info.send_frame, "Send Trame");
             fflush(stdout);
         }
         memset(&network_frame_info.send_frame, 0, sizeof(struct arp_frame));
     }
+    close(sockRaw);
     return(0);
 }
 
-// Bonus: gartuitous arp, IPV6, selectionner interfasce, Wifi, n'importe quel demande arp, verbose.
+// Bonus: gartuitous arp, selectionner interfasce, verbose.

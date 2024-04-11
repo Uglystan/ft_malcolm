@@ -18,7 +18,7 @@ ssize_t recv_frame(int *sockRaw, char *buf, struct network_frame *network_frame_
     /* Ici, nous avons un pointeur 'buf' pointant vers les données brutes de la trame. On utilise memcpy pour copier tout ce qu'il y'a dans buf dans
     recv_frame et on fait une copie de la taille de recv_frame*/
 
-    if (recv != sizeof(struct arp_frame))
+    if (recv < (ssize_t)sizeof(struct arp_frame))
         return (printf("Error: Taille du buffer different de la taille d'une frame arp\n"), false);
     memcpy(&network_frame_info->recv_frame, buf, sizeof(struct arp_frame));
 

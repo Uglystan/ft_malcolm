@@ -51,8 +51,6 @@ static bool check_interface(char *interface, struct sockaddr_ll *network_interfa
             network_interface->sll_hatype = ARPHRD_ETHER;
             network_interface->sll_protocol = htons(ETH_P_ARP);
             memset(&network_interface->sll_addr, 0xFF, ETH_ALEN);
-            printf("\033[1;32mInterface %s find\033[0m\n", temp->ifa_name);//verbose
-            fflush(stdout);
             break;
         }
         temp = temp->ifa_next;

@@ -16,5 +16,6 @@ net.ipv6.conf.all.accept_source_route = 0\n\
 net.ipv6.conf.all.accept_redirects = 0\n\
 net.ipv4.conf.all.secure_redirects = 0"> /etc/sysctl.conf
 
+ENTRYPOINT sysctl -p /etc/sysctl.conf && make && tail -f /bin/sh
 # ENTRYPOINT sysctl -p /etc/sysctl.conf && make && ./ft_malcolm 192.168.1.2 02:42:c0:a8:01:02 192.168.1.3 02:42:c0:a8:01:03 > /dev/stdout
-ENTRYPOINT sysctl -p /etc/sysctl.conf && make && ./ft_malcolm -g 192.168.1.2 eth0 > /dev/stdout
+# ENTRYPOINT sysctl -p /etc/sysctl.conf && make && ./ft_malcolm -g 192.168.1.2 eth0 > /dev/stdout
