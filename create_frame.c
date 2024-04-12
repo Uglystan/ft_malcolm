@@ -46,7 +46,7 @@ bool get_my_address_MAC(unsigned char *dest, char *ip, int verbose)
     if ((getifaddrs(&all_interface)) != 0)
         return(printf("getifaddrs error: %s\n", strerror(errno)), false);
     if (!(get_interface_name(ip, interface_name, all_interface, verbose)))
-        return (false);
+        return (freeifaddrs(all_interface), false);
 
     temp = all_interface;
     while(temp != NULL)

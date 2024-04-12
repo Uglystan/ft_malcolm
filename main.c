@@ -59,16 +59,16 @@ int main(int argc, char **argv)
         {
             ssize_t recv = recv_frame(&sockRaw, buf, &network_frame_info, &len);
             if (recv <= 0)
-                return (1);
+                return (close(sockRaw), 1);
 
             if (memcmp(network_frame_info.recv_frame.sender_mac, network_frame_info.arg_addr.arg_mac_addr_src, ETH_ALEN) == 0 && memcmp(network_frame_info.recv_frame.sender_ip, network_frame_info.arg_addr.arg_ip_addr_src, 4) == 0 && (memcmp(network_frame_info.recv_frame.target_mac, network_frame_info.arg_addr.arg_mac_addr_target, ETH_ALEN) == 0 || memcmp(network_frame_info.recv_frame.target_mac, "\0\0\0\0\00\0\0", ETH_ALEN) == 0) && memcmp(network_frame_info.recv_frame.target_ip, network_frame_info.arg_addr.arg_ip_addr_target, 4) == 0)
             {
                 /*Creation de la trame arp retour falsifie*/
 
                 if (!(create_frame_unicast_request(&network_frame_info.send_frame, &network_frame_info.recv_frame, argv[3], network_frame_info.arg_addr.verbose)))
-                    return(1);
+                    return(close(sockRaw), 1);
                 if (!(send_frame(sockRaw, &network_frame_info)))
-                    return (1);
+                    return (close(sockRaw), 1);
                 if (network_frame_info.arg_addr.verbose == 1)
                     print_information(buf, &network_frame_info, recv);
                 fflush(stdout);
@@ -81,12 +81,14 @@ int main(int argc, char **argv)
         else if (network_frame_info.arg_addr.gratuitous == 1) //Ne fonctionne pas si pas l'adresse ip n'est pas deja rentre sur les machines, marche en one shot
         {
             if (!(create_frame_gatuitous(&network_frame_info.send_frame, argv[2], network_frame_info.arg_addr.verbose)))
-                return (1);
+                return (close(sockRaw), 1);
             if (send_frame(sockRaw, &network_frame_info) == -1)
-                return (1);
+                return (close(sockRaw), 1);
             if (network_frame_info.arg_addr.verbose == 1)
+            {
                 print_network_interface(&network_frame_info.network_interface);
                 print_arp_frame(&network_frame_info.send_frame, "Send Trame");
+            }
             fflush(stdout);
         }
         memset(&network_frame_info.send_frame, 0, sizeof(struct arp_frame));
