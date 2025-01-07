@@ -3,7 +3,7 @@
 size_t ft_strlen(const char *str)
 {
     size_t i = 0;
-    for(; str[i] != '\0'; i++)
+    for (; str[i] != '\0'; i++)
     {
     }
     return (i);
@@ -17,6 +17,35 @@ void ft_strcpy(char *dest, const char *src)
         dest[i] = src[i];
     }
     dest[i] = '\0';
+}
+
+int ft_memcmp(const void *s1, const void* s2, size_t size) {
+    unsigned char *str1 = (unsigned char *) s1;
+    unsigned char *str2 = (unsigned char *) s2;
+
+    for (size_t i = 0; i < size; i++) {
+        if (str1[i] != str2[i])
+            return (str1[i] - str2[i]);
+    }
+    return (0);
+}
+
+void * ft_memcpy(void * dest, const void *src, size_t size) {
+    unsigned char *strDest = dest;
+    unsigned char *strSrc = src;
+
+    for (size_t i = 0; i < size; i++) {
+        strDest[i] = strSrc[i];
+    }
+    return (strDest);
+}
+
+void * ft_memset(void *s, int c, size_t size) {
+    char * str = s;
+
+    for (size_t i = 0; i < size; i++) {
+        
+    }
 }
 
 // Transform data en binaire

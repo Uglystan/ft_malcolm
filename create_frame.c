@@ -54,7 +54,7 @@ bool get_my_address_MAC(unsigned char *dest, char *ip, int verbose)
         if (temp->ifa_addr->sa_family == AF_PACKET && strcmp(temp->ifa_name, interface_name) == 0)
         {
             struct sockaddr_ll *interface = (struct sockaddr_ll *)temp->ifa_addr;
-            memcpy(dest, interface->sll_addr, ETH_ALEN);
+            ft_memcpy(dest, interface->sll_addr, ETH_ALEN);
             break;
         }
         temp = temp->ifa_next;
@@ -65,7 +65,7 @@ bool get_my_address_MAC(unsigned char *dest, char *ip, int verbose)
 
 bool create_frame_unicast_request(struct arp_frame *send_frame, struct arp_frame *recv_frame, char *ip, int verbose)
 {
-    memcpy(send_frame->ether_dest_mac, recv_frame->ether_src_mac, ETH_ALEN);
+    ft_memcpy(send_frame->ether_dest_mac, recv_frame->ether_src_mac, ETH_ALEN);
     if (!(get_my_address_MAC(send_frame->ether_src_mac, ip, verbose)))
         return (false);
     send_frame->ether_type = htons(0x0806);
@@ -74,11 +74,11 @@ bool create_frame_unicast_request(struct arp_frame *send_frame, struct arp_frame
     send_frame->mac_size = 0x06;
     send_frame->op_code = htons(0x0002);
     send_frame->protocole_type = htons(0x0800);
-    memcpy(send_frame->sender_ip, recv_frame->target_ip, 4);
+    ft_memcpy(send_frame->sender_ip, recv_frame->target_ip, 4);
     if (!(get_my_address_MAC(send_frame->sender_mac, ip, verbose)))
         return (false);
-    memcpy(send_frame->target_ip, recv_frame->sender_ip, 4);
-    memcpy(send_frame->target_mac, recv_frame->sender_mac, ETH_ALEN);
+    ft_memcpy(send_frame->target_ip, recv_frame->sender_ip, 4);
+    ft_memcpy(send_frame->target_mac, recv_frame->sender_mac, ETH_ALEN);
     return (true);
 }
 

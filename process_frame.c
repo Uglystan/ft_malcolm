@@ -20,7 +20,7 @@ ssize_t recv_frame(int *sockRaw, char *buf, struct network_frame *network_frame_
 
     if (recv < (ssize_t)sizeof(struct arp_frame))
         return (printf("Error: Taille du buffer different de la taille d'une frame arp\n"), false);
-    memcpy(&network_frame_info->recv_frame, buf, sizeof(struct arp_frame));
+    ft_memcpy(&network_frame_info->recv_frame, buf, sizeof(struct arp_frame));
 
     return (recv);
 }
