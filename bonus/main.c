@@ -72,9 +72,9 @@ int main(int argc, char **argv)
                 if (network_frame_info.arg_addr.verbose == 1)
                     print_information(buf, &network_frame_info, recv);
                 fflush(stdout);
-                memset(&network_frame_info.network_interface, 0, sizeof(struct sockaddr_ll));
-                memset(buf, 0, SIZE_MAX_ARP);
-                memset(&network_frame_info.recv_frame, 0, sizeof(struct arp_frame));
+                ft_memset(&network_frame_info.network_interface, 0, sizeof(struct sockaddr_ll));
+                ft_memset(buf, 0, SIZE_MAX_ARP);
+                ft_memset(&network_frame_info.recv_frame, 0, sizeof(struct arp_frame));
                 break;
             }
         }
@@ -91,7 +91,7 @@ int main(int argc, char **argv)
             }
             fflush(stdout);
         }
-        memset(&network_frame_info.send_frame, 0, sizeof(struct arp_frame));
+        ft_memset(&network_frame_info.send_frame, 0, sizeof(struct arp_frame));
     }
     close(sockRaw);
     return(0);

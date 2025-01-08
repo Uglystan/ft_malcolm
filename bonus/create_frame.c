@@ -23,12 +23,12 @@ bool get_interface_name(char *ip_cible, char *interface_name, struct ifaddrs *al
     temp = all_interface;
     while(temp != NULL)
     {
-        if(temp->ifa_addr->sa_family == AF_INET && strcmp(temp->ifa_name, "lo") != 0 && check_same_network(temp, ip_cible))
+        if(temp->ifa_addr->sa_family == AF_INET && ft_strcmp(temp->ifa_name, "lo") != 0 && check_same_network(temp, ip_cible))
         {
             struct sockaddr_in *addr = (struct sockaddr_in *)temp->ifa_addr;
             if (verbose == 1)
                 printf("Interface found name: %s\t Adresse IP: %s\n", temp->ifa_name, inet_ntoa(addr->sin_addr));
-            strcpy(interface_name, temp->ifa_name);
+            ft_strcpy(interface_name, temp->ifa_name);
             return (true);
         }
         temp = temp->ifa_next;
@@ -51,7 +51,7 @@ bool get_my_address_MAC(unsigned char *dest, char *ip, int verbose)
     temp = all_interface;
     while(temp != NULL)
     {
-        if (temp->ifa_addr->sa_family == AF_PACKET && strcmp(temp->ifa_name, interface_name) == 0)
+        if (temp->ifa_addr->sa_family == AF_PACKET && ft_strcmp(temp->ifa_name, interface_name) == 0)
         {
             struct sockaddr_ll *interface = (struct sockaddr_ll *)temp->ifa_addr;
             ft_memcpy(dest, interface->sll_addr, ETH_ALEN);
@@ -88,7 +88,7 @@ leurs table arp mise a jour avec la nouvelle adresse MAC*/
 
 bool create_frame_gatuitous(struct arp_frame *send_frame, char *ip, int verbose)
 {
-    memset(send_frame->ether_dest_mac, 0xff, ETH_ALEN);
+    ft_memset(send_frame->ether_dest_mac, 0xff, ETH_ALEN);
     if (!(get_my_address_MAC(send_frame->ether_src_mac, ip, verbose)))
         return (false);
     send_frame->ether_type = htons(0x0806);
@@ -101,6 +101,6 @@ bool create_frame_gatuitous(struct arp_frame *send_frame, char *ip, int verbose)
     if (!(get_my_address_MAC(send_frame->sender_mac, ip, verbose)))
         return (false);
     inet_pton(AF_INET, ip, send_frame->target_ip);
-    memset(send_frame->target_mac, 0xff, ETH_ALEN);
+    ft_memset(send_frame->target_mac, 0xff, ETH_ALEN);
     return (true);
 }

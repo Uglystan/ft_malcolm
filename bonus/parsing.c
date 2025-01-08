@@ -43,14 +43,14 @@ static bool check_interface(char *interface, struct sockaddr_ll *network_interfa
     temp = all_interfaces;
     while(temp != NULL)
     {
-        if (strcmp(temp->ifa_name, interface) == 0)
+        if (ft_strcmp(temp->ifa_name, interface) == 0)
         {
             network_interface->sll_family = AF_PACKET;
             network_interface->sll_ifindex = if_nametoindex(temp->ifa_name);
             network_interface->sll_halen = ETH_ALEN;
             network_interface->sll_hatype = ARPHRD_ETHER;
             network_interface->sll_protocol = htons(ETH_P_ARP);
-            memset(&network_interface->sll_addr, 0xFF, ETH_ALEN);
+            ft_memset(&network_interface->sll_addr, 0xFF, ETH_ALEN);
             break;
         }
         temp = temp->ifa_next;
@@ -69,9 +69,9 @@ bool use_case_info(void)
 
 bool parse_arg(char **argv, int argc, struct data_arg *arg_addr, struct sockaddr_ll *network_interface)
 {
-    memset(arg_addr, 0, sizeof(struct data_arg));
-    memset(network_interface, 0, sizeof(struct sockaddr_ll));
-    if ((argc == 5 || argc == 6) && strcmp(argv[1], "-g") != 0)
+    ft_memset(arg_addr, 0, sizeof(struct data_arg));
+    ft_memset(network_interface, 0, sizeof(struct sockaddr_ll));
+    if ((argc == 5 || argc == 6) && ft_(argv[1], "-g") != 0)
     {
         if (!parse_ip(argv[1], arg_addr->arg_ip_addr_src) || !parse_ip(argv[3], arg_addr->arg_ip_addr_target) || !parse_mac(argv[2]) || !parse_mac(argv[4]))
             return (use_case_info());
@@ -80,7 +80,7 @@ bool parse_arg(char **argv, int argc, struct data_arg *arg_addr, struct sockaddr
         arg_addr->unicast = 1;
         arg_addr->verbose = check_verbose_arg(argv, argc);
     }
-    else if ( (argc == 4 || argc == 5) && strcmp(argv[1], "-g") == 0)
+    else if ( (argc == 4 || argc == 5) && ft_strcmp(argv[1], "-g") == 0)
     {
         if (!parse_ip(argv[2], arg_addr->arg_ip_addr_target) || !check_interface(argv[3], network_interface))
             return (use_case_info());
