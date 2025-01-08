@@ -57,7 +57,11 @@ struct network_frame {
 };
 
 size_t ft_strlen(const char *str);
+void * ft_memcpy(void * dest, void *src, size_t size);
+void * ft_memset(void *s, int c, size_t size);
+int ft_memcmp(const void *s1, const void* s2, size_t size);
 void ft_strcpy(char *dest, const char *src);
+int ft_strcmp(const char *s1, const char *s2);
 void converToBinary(char *data, ssize_t length);
 void binaryToHex(char *binStr);
 void print_information(char *buf, struct network_frame *network_frame_info, ssize_t recv);

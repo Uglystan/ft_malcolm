@@ -27,7 +27,7 @@
 
 int sockRaw = 0;
 
-void sig(int sig)
+void sigHandle(int sig)
 {
     printf("Catch signal %d : CTRL + C stop ft_malcolm\n", sig);
     close(sockRaw);
@@ -36,7 +36,7 @@ void sig(int sig)
 
 int main(int argc, char **argv)
 {
-    signal(SIGINT, sig);
+    signal(SIGINT, sigHandle);
     struct network_frame network_frame_info;
     if (!parse_arg(argv, argc, &network_frame_info.arg_addr, &network_frame_info.network_interface))
         return (1);

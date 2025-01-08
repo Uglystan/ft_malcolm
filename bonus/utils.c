@@ -20,7 +20,7 @@ void ft_strcpy(char *dest, const char *src)
 }
 
 int ft_strcmp(const char *s1, const char *s2) {
-    for (size_t i = 0; s1[i] != "\0"; i++) {
+    for (size_t i = 0; s1[i] != '\0'; i++) {
         if (s1[i] != s2[i])
             return (s1[i] - s2[i]);
     }
@@ -38,7 +38,7 @@ int ft_memcmp(const void *s1, const void* s2, size_t size) {
     return (0);
 }
 
-void * ft_memcpy(void * dest, const void *src, size_t size) {
+void * ft_memcpy(void * dest, void *src, size_t size) {
     unsigned char *strDest = dest;
     unsigned char *strSrc = src;
 

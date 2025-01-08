@@ -71,7 +71,7 @@ bool parse_arg(char **argv, int argc, struct data_arg *arg_addr, struct sockaddr
 {
     ft_memset(arg_addr, 0, sizeof(struct data_arg));
     ft_memset(network_interface, 0, sizeof(struct sockaddr_ll));
-    if ((argc == 5 || argc == 6) && ft_(argv[1], "-g") != 0)
+    if ((argc == 5 || argc == 6) && ft_strcmp(argv[1], "-g") != 0)
     {
         if (!parse_ip(argv[1], arg_addr->arg_ip_addr_src) || !parse_ip(argv[3], arg_addr->arg_ip_addr_target) || !parse_mac(argv[2]) || !parse_mac(argv[4]))
             return (use_case_info());
