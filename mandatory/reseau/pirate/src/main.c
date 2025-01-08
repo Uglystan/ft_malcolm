@@ -23,11 +23,11 @@
 //Pour recuperer toutes les communications qui arrive sur notre machine on utilise des RAW Sockets qui vont permettre de manipuler/composer
 //soi-meme la partie IP du modele OSI. Avec des sockets normal on peut aussi agir sur cette partie mais pas autant on sera plutot sur la partie 4 du modele OSI.
 //On va pouvoir aussi avec ce genre de socket recuperer les requetes broadcast et multicast.
-//Je met sockRaw en variable globale pour pouvoir quand je recois un signal CTRL + C quitter proprement le programme
+//Je met sockRaw en variable globale pour pouvoir quand je recois un signal CTRL + V quitter proprement le programme
 
 int sockRaw = 0;
 
-void sigHandle(int sig)
+void sig(int sig)
 {
     printf("Catch signal %d : CTRL + C stop ft_malcolm\n", sig);
     close(sockRaw);
@@ -36,7 +36,7 @@ void sigHandle(int sig)
 
 int main(int argc, char **argv)
 {
-    signal(SIGINT, sigHandle);
+    signal(SIGINT, sig);
     struct network_frame network_frame_info;
     if (!parse_arg(argv, argc, &network_frame_info.arg_addr, &network_frame_info.network_interface))
         return (1);
@@ -73,5 +73,6 @@ int main(int argc, char **argv)
             break;
         }
     }
-    return(close(sockRaw), 0);
+    close(sockRaw);
+    return(0);
 }
