@@ -96,5 +96,3 @@ int main(int argc, char **argv)
     close(sockRaw);
     return(0);
 }
-
-// Bonus: gartuitous arp, selectionner interfasce, verbose.
