@@ -26,7 +26,7 @@ static bool parse_ip(char *str_ip, uint8_t *ip_address)
 
 bool use_case_info(void)
 {
-    printf("Utilisation de ft_malcolm:\nMode unicast \"./ft_malcolm 'adresse ip source' 'adresse mac source' 'adresse ip cible' 'adresse mac cible'\"");
+    printf("Utilisation de ft_malcolm:\nMode unicast \"./ft_malcolm 'adresse ip source' 'adresse mac source' 'adresse ip cible' 'adresse mac cible'\"\n");
     return (false);
 }
 

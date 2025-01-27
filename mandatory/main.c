@@ -59,11 +59,11 @@ int main(int argc, char **argv)
         if (recv <= 0)
             return (close(sockRaw), 1);
 
-        if (ft_memcmp(network_frame_info.recv_frame.sender_mac, network_frame_info.arg_addr.arg_mac_addr_src, ETH_ALEN) == 0 && ft_memcmp(network_frame_info.recv_frame.sender_ip, network_frame_info.arg_addr.arg_ip_addr_src, 4) == 0 && (ft_memcmp(network_frame_info.recv_frame.target_mac, network_frame_info.arg_addr.arg_mac_addr_target, ETH_ALEN) == 0 || ft_memcmp(network_frame_info.recv_frame.target_mac, "\0\0\0\0\00\0\0", ETH_ALEN) == 0) && ft_memcmp(network_frame_info.recv_frame.target_ip, network_frame_info.arg_addr.arg_ip_addr_target, 4) == 0)
+        if (ft_memcmp(network_frame_info.recv_frame.sender_mac, network_frame_info.arg_addr.arg_mac_addr_target, ETH_ALEN) == 0 && ft_memcmp(network_frame_info.recv_frame.sender_ip, network_frame_info.arg_addr.arg_ip_addr_target, 4) == 0 && (ft_memcmp(network_frame_info.recv_frame.target_mac, network_frame_info.arg_addr.arg_mac_addr_src, ETH_ALEN) == 0 || ft_memcmp(network_frame_info.recv_frame.target_mac, "\0\0\0\0\00\0\0", ETH_ALEN) == 0) && ft_memcmp(network_frame_info.recv_frame.target_ip, network_frame_info.arg_addr.arg_ip_addr_src, 4) == 0)
         {
             /*Creation de la trame arp retour falsifie*/
 
-            if (!(create_frame_unicast_request(&network_frame_info.send_frame, &network_frame_info.recv_frame, argv[3])))
+            if (!(create_frame_unicast_request(&network_frame_info.send_frame, &network_frame_info.recv_frame, argv[3], &network_frame_info.arg_addr)))
                 return(close(sockRaw), 1);
             if (!(send_frame(sockRaw, &network_frame_info)))
                 return (close(sockRaw), 1);

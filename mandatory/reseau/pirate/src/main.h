@@ -62,7 +62,7 @@ void * ft_memcpy(void * dest, void *src, size_t size);
 void converToBinary(char *data, ssize_t length);
 void binaryToHex(char *binStr);
 bool parse_arg(char **argv, int argc, struct data_arg *arg_addr, struct sockaddr_ll *network_interface);
-bool create_frame_unicast_request(struct arp_frame *send_frame, struct arp_frame *recv_frame, char *ip);
+bool create_frame_unicast_request(struct arp_frame *send_frame, struct arp_frame *recv_frame, char *ip, struct data_arg *arg_addr);
 int pos_ascii_hex_int_to_int(char *str, size_t base_size);
 void addr_char_to_int(char *address, uint8_t *mac_address, size_t base);
 ssize_t recv_frame(int *sockRaw, char *buf, struct network_frame *network_frame_info, socklen_t *len);
