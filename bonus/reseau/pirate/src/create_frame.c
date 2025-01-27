@@ -95,12 +95,12 @@ bool create_frame_gatuitous(struct arp_frame *send_frame, char *ip, int verbose)
     send_frame->hardware_type = htons(0x0001);
     send_frame->ip_size = 0x04;
     send_frame->mac_size = 0x06;
-    send_frame->op_code = htons(0x0001);
+    send_frame->op_code = htons(0x0002);
     send_frame->protocole_type = htons(0x0800);
     inet_pton(AF_INET, ip, send_frame->sender_ip);
     if (!(get_my_address_MAC(send_frame->sender_mac, ip, verbose)))
         return (false);
     inet_pton(AF_INET, ip, send_frame->target_ip);
-    ft_memset(send_frame->target_mac, 0xff, ETH_ALEN);
+    ft_memset(send_frame->target_mac, 0x00, ETH_ALEN);
     return (true);
 }
