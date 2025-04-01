@@ -33,10 +33,6 @@ Cela peut augmenter les chances que l'attaque réussisse en trompant efficacemen
 int send_frame(int sockRaw, struct network_frame *network_frame_info)
 {
     int ret = 0;
-    for(int i = 0; i < 5; i++)
-    {
-        ret = sendto(sockRaw, &network_frame_info->send_frame, sizeof(network_frame_info->send_frame), 0, (struct sockaddr *)&network_frame_info->network_interface, sizeof(struct sockaddr_ll));
-        sleep(2);
-    }
+    ret = sendto(sockRaw, &network_frame_info->send_frame, sizeof(network_frame_info->send_frame), 0, (struct sockaddr *)&network_frame_info->network_interface, sizeof(struct sockaddr_ll));
     return (ret);
 }
